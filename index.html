@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>ByeFrame · Optik Laboratuvar</title>
+  <title>ByeFrame · Anti-Bleed Lab</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <div class="logo-section">
       <span class="logo-icon">👁️</span>
       <span class="logo-text">ByeFrame</span>
-      <span class="badge">PRO LAB</span>
+      <span class="badge">ANTI-BLEED</span>
     </div>
     <div class="top-controls">
       <select id="profileSelect" class="profile-dropdown"></select>
@@ -22,10 +22,10 @@
   <main class="focal-area">
     <div class="focal-container">
       <div class="test-character" id="testCharacter">8</div>
-      <div class="test-label">ODAK NOKTASI</div>
+      <div class="test-label">ANTI-BLEED MODU</div>
     </div>
     <div class="sample-text-container">
-      <p class="sample-text" id="sampleText">Hızlı kahverengi tilki tembel köpeğin üzerinden atlar. +2.5 test: Net görene kadar ayarla.</p>
+      <p class="sample-text" id="sampleText">Harfler birbirine akıyorsa 'Letter Spacing' ve 'Text Stroke' sürgülerini kullanın.</p>
     </div>
   </main>
 
@@ -34,11 +34,13 @@
       <div class="live-values-bar">
         <span>🔍 <span id="scaleValLive">100</span>%</span>
         <span>✒️ <span id="weightValLive">400</span></span>
-        <span>⚡ <span id="sharpValLive">0</span></span>
+        <span>📏 <span id="letterSpacingValLive">0</span>px</span>
+        <span>🎨 <span id="colorModeLive">Default</span></span>
       </div>
+      
       <div class="sliders-grid">
         <div class="slider-card">
-          <label>🔍 BÜYÜTME (Zoom) <span id="scaleVal">100</span>%</label>
+          <label>🔍 BÜYÜTME <span id="scaleVal">100</span>%</label>
           <input type="range" id="scaleSlider" min="100" max="250" step="5" value="100" class="thumb-slider">
         </div>
         <div class="slider-card">
@@ -46,20 +48,21 @@
           <input type="range" id="fontWeightSlider" min="100" max="900" step="50" value="400" class="thumb-slider">
         </div>
         <div class="slider-card">
-          <label>🔆 KONTRAST <span id="contrastVal">100</span>%</label>
-          <input type="range" id="contrastSlider" min="50" max="200" step="1" value="100" class="thumb-slider">
+          <label>📏 HARF ARALIĞI <span id="letterSpacingVal">0</span>px</label>
+          <input type="range" id="letterSpacingSlider" min="0" max="30" step="1" value="0" class="thumb-slider">
         </div>
         <div class="slider-card">
-          <label>⚡ KESKİNLİK <span id="sharpVal">0</span></label>
-          <input type="range" id="sharpSlider" min="0" max="200" step="5" value="0" class="thumb-slider">
+          <label>✏️ KENAR ÇİZGİSİ <span id="textStrokeVal">0</span>px</label>
+          <input type="range" id="textStrokeSlider" min="0" max="3" step="0.1" value="0" class="thumb-slider">
         </div>
-        <div class="slider-card">
-          <label>🌈 RENK KAYMASI <span id="chromaVal">0</span>px</label>
-          <input type="range" id="chromaSlider" min="0" max="10" step="0.2" value="0" class="thumb-slider">
-        </div>
-        <div class="slider-card">
-          <label>💡 PARLAKLIK <span id="brightVal">100</span>%</label>
-          <input type="range" id="brightSlider" min="60" max="160" step="1" value="100" class="thumb-slider">
+      </div>
+
+      <div class="color-mode-section">
+        <span class="color-label">🎨 RENK PALETİ:</span>
+        <div class="color-buttons">
+          <button data-color="default" class="color-btn active">Varsayılan</button>
+          <button data-color="amber" class="color-btn">Amber/Siyah</button>
+          <button data-color="cyan" class="color-btn">Cyan/Siyah</button>
         </div>
       </div>
     </div>
