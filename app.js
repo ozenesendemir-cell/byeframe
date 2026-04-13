@@ -1,74 +1,63 @@
 (function() {
-    const profileSelect = document.getElementById('profileSelect');
-    const panicBtn = document.getElementById('panicResetBtn');
-    const sliders = ['contrast', 'sharp', 'chroma', 'bright'];
-    const opticalCanvas = document.getElementById('opticalCanvas');
-    
-    let profiles = JSON.parse(localStorage.getItem('byeframe_profiles')) || {
-        Deniz: { contrast: 100, sharpness: 0, chromaticOffset: 0, brightness: 100 },
-        Ceren: { contrast: 145, sharpness: -2, chromaticOffset: 2, brightness: 110 }
+    const pSelect = document.getElementById('profileSelect');
+    const pBtn = document.getElementById('panicResetBtn');
+    const canvas = document.getElementById('opticalCanvas');
+    const sliders = ['scale', 'fontWeight', 'contrast', 'sharp', 'chroma', 'bright'];
+
+    let profiles = JSON.parse(localStorage.getItem('byeframe_v2_profiles')) || {
+        Deniz: { scale: 130, fontWeight: 600, contrast: 120, sharpness: 50, chromaticOffset: 0, brightness: 100 },
+        Ceren: { scale: 100, fontWeight: 400, contrast: 100, sharpness: 0, chromaticOffset: 0, brightness: 100 }
     };
-    let currentProfile = localStorage.getItem('active_profile') || 'Deniz';
+    let active = localStorage.getItem('byeframe_v2_active') || 'Deniz';
 
-    function applyFilters() {
-        const p = profiles[currentProfile];
-        let filter = `contrast(${p.contrast}%) brightness(${p.brightness}%)`;
+    function apply() {
+        const p = profiles[active];
         
-        if (p.sharpness > 0) filter += ` blur(${p.sharpness}px)`;
-        else if (p.sharpness < 0) filter += ` contrast(150%) brightness(110%)`; // Basit keskinleştirme simülasyonu
+        // 1. Filtreleri oluştur (Keskinlik için SVG kullanmadan CSS simülasyonu yapalım, daha hızlı)
+        let f = `contrast(${p.contrast}%) brightness(${p.brightness}%) saturate(120%)`;
+        if (p.sharpness > 0) f += ` contrast(${100 + p.sharpness / 2}%) brightness(${100 + p.sharpness / 5}%)`;
         
-        opticalCanvas.style.filter = filter;
-        localStorage.setItem('byeframe_profiles', JSON.stringify(profiles));
-    }
+        canvas.style.filter = f;
+        
+        // 2. Büyütme ve Kalınlık
+        canvas.style.transform = `scale(${p.scale / 100})`;
+        canvas.style.setProperty('--gw', p.fontWeight);
+        canvas.querySelectorAll('*').forEach(el => el.style.fontWeight = p.fontWeight);
 
-    function updateUI() {
-        const p = profiles[currentProfile];
-        document.getElementById('contrastSlider').value = p.contrast;
-        document.getElementById('sharpSlider').value = p.sharpness;
-        document.getElementById('chromaSlider').value = p.chromaticOffset;
-        document.getElementById('brightSlider').value = p.brightness;
-        
-        ['contrast', 'sharp', 'chroma', 'bright'].forEach(s => {
-            document.getElementById(s + 'Val').innerText = p[s === 'sharp' ? 'sharpness' : s === 'chroma' ? 'chromaticOffset' : s];
+        // 3. Değerleri güncelle
+        sliders.forEach(s => {
+            const val = p[s === 'sharp' ? 'sharpness' : s === 'chroma' ? 'chromaticOffset' : s];
+            document.getElementById(s + 'Val').innerText = val;
+            document.getElementById(s + 'Slider').value = val;
         });
+
+        localStorage.setItem('byeframe_v2_profiles', JSON.stringify(profiles));
     }
 
-    // Profil listesini doldur
-    Object.keys(profiles).forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.innerText = name;
-        if (name === currentProfile) opt.selected = true;
-        profileSelect.appendChild(opt);
+    // Profil yönetimi
+    Object.keys(profiles).forEach(n => {
+        const o = document.createElement('option');
+        o.value = o.innerText = n;
+        if(n === active) o.selected = true;
+        pSelect.appendChild(o);
     });
 
-    profileSelect.onchange = (e) => {
-        currentProfile = e.target.value;
-        localStorage.setItem('active_profile', currentProfile);
-        updateUI();
-        applyFilters();
-    };
+    pSelect.onchange = (e) => { active = e.target.value; localStorage.setItem('byeframe_v2_active', active); apply(); };
+    pBtn.onclick = () => { profiles[active] = { scale: 100, fontWeight: 400, contrast: 100, sharpness: 0, chromaticOffset: 0, brightness: 100 }; apply(); };
 
-    panicBtn.onclick = () => {
-        profiles[currentProfile] = { contrast: 100, sharpness: 0, chromaticOffset: 0, brightness: 100 };
-        updateUI();
-        applyFilters();
-    };
-
-    document.querySelectorAll('input[type=range]').forEach(slider => {
-        slider.oninput = (e) => {
-            const val = parseFloat(e.target.value);
-            const type = e.target.id.replace('Slider', '');
-            if (type === 'contrast') profiles[currentProfile].contrast = val;
-            if (type === 'sharp') profiles[currentProfile].sharpness = val;
-            if (type === 'chroma') profiles[currentProfile].chromaticOffset = val;
-            if (type === 'bright') profiles[currentProfile].brightness = val;
-            
-            updateUI();
-            applyFilters();
+    sliders.forEach(s => {
+        document.getElementById(s + 'Slider').oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            const t = e.target.id.replace('Slider', '');
+            if(t === 'scale') profiles[active].scale = v;
+            if(t === 'fontWeight') profiles[active].fontWeight = v;
+            if(t === 'contrast') profiles[active].contrast = v;
+            if(t === 'sharp') profiles[active].sharpness = v;
+            if(t === 'chroma') profiles[active].chromaticOffset = v;
+            if(t === 'bright') profiles[active].brightness = v;
+            apply();
         };
     });
 
-    updateUI();
-    applyFilters();
+    apply();
 })();
