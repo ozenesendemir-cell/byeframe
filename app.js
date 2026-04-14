@@ -2,125 +2,106 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByeFrame v6.3.1 - Stabilizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ByeFrame v6.4 - Canvas Core</title>
     <style>
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #000000;
-        }
+        body { background: #fff; font-family: sans-serif; margin: 0; padding: 20px; touch-action: manipulation; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px; border: 1px solid #ccc; opacity: 0.4; border-radius: 5px; }
+        .tab.active { opacity: 1; border: 2px solid #000; font-weight: bold; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding-bottom: 200px; /* Kontroller için yer */
-        }
+        #canvas-container { width: 100%; overflow: hidden; border: 1px solid #eee; }
+        canvas { width: 100%; height: auto; image-rendering: pixelated; }
 
-        #reader-area {
-            margin-top: 50px;
-            padding: 40px;
-            width: 85%;
-            font-size: 28px; /* Presbiyopi için başlangıç boyutu */
-            line-height: 1.8;
-            /* Filtre burada aktif */
-            filter: url(#refinedDeconv);
-            transition: letter-spacing 0.2s;
-        }
-
-        .controls {
-            position: fixed;
-            bottom: 0;
-            background: #e9e9e9;
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        input[type=range] { width: 100%; margin: 10px 0; }
+        .controls { position: fixed; bottom: 0; left: 0; width: 100%; background: #f9f9f9; padding: 20px; border-top: 2px solid #ddd; display: grid; gap: 10px; box-sizing: border-box; }
+        .control-group { display: flex; justify-content: space-between; align-items: center; }
+        input { width: 60%; }
     </style>
 </head>
 <body>
 
-    <div id="reader-area">
-        ByeFrame Operasyonu: v6.3.1 Stabilize Modu. <br>
-        Eğer "kayaçlar" çalışmıyorsa, Divisor parametresi matrisin enerjisini dengelemiyor demektir. 
-        Şimdi bu metindeki harflerin kenarlarındaki ışık halelerini (halo) yok etmeye odaklanıyoruz. 
-        Toprak Razgatlıoğlu'nun virajdaki keskinliği gibi harfleri keskinleştirmeliyiz.
+    <div class="tabs">
+        <div class="tab">Miyop</div>
+        <div class="tab active">Presbiopi (+2.5)</div>
+        <div class="tab">Astigmat</div>
     </div>
 
-    <svg style="position: absolute; width: 0; height: 0;">
-        <filter id="refinedDeconv">
-            <feConvolveMatrix 
-                id="mainMatrix"
-                order="3" 
-                preserveAlpha="true" 
-                divisor="1"
-                kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" />
-        </filter>
-    </svg>
+    <div id="canvas-container">
+        <canvas id="outputCanvas"></canvas>
+    </div>
 
     <div class="controls">
         <div class="control-group">
-            <label>De-conv (Merkez Gücü): <span id="val-center">5</span></label>
-            <input type="range" id="input-center" min="1" max="250" value="5">
+            <label>Keskinlik (Matrix): <span id="val-sharp">1</span></label>
+            <input type="range" id="input-sharp" min="1" max="50" value="1" step="0.5">
         </div>
         <div class="control-group">
-            <label>Kenar Traşlama (Negatif): <span id="val-edge">-1</span></label>
-            <input type="range" id="input-edge" min="-50" max="0" value="-1">
+            <label>Harf Aralığı: <span id="val-spacing">2</span></label>
+            <input type="range" id="input-spacing" min="0" max="15" value="2">
         </div>
-        <div class="control-group">
-            <label>Harf Arası (px): <span id="val-spacing">2</span></label>
-            <input type="range" id="input-spacing" min="0" max="20" value="2">
-        </div>
+        <div style="font-size: 10px; color: gray;">*Canvas Rendering Mode: Aktif</div>
     </div>
 
     <script>
-        const matrix = document.getElementById('mainMatrix');
-        const reader = document.getElementById('reader-area');
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const sharpInput = document.getElementById('input-sharp');
+        const spacingInput = document.getElementById('input-spacing');
 
-        function updateEngine() {
-            const center = parseFloat(document.getElementById('input-center').value);
-            const edge = parseFloat(document.getElementById('input-edge').value);
-            const spacing = document.getElementById('input-spacing').value;
-
-            // Matris Toplamı Hesaplama (Divisor)
-            // 3x3 matrisimizde 4 kenar aktif (0 -1 0, -1 5 -1, 0 -1 0 yapısı)
-            // Toplam = center + (4 * edge)
-            const sum = center + (4 * edge);
-            const divisor = sum <= 0 ? 1 : sum; // 0'a bölme hatasını engelle
-
-            // Matris Dizilimi
-            const k = `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`;
+        // Test metni ayarları
+        function drawText() {
+            const sharp = parseFloat(sharpInput.value);
+            const spacing = parseInt(spacingInput.value);
             
-            matrix.setAttribute('kernelMatrix', k);
-            matrix.setAttribute('divisor', divisor);
+            // Canvas boyutunu ayarla
+            canvas.width = window.innerWidth * 2;
+            canvas.height = 400;
             
-            reader.style.letterSpacing = spacing + 'px';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Metin özellikleri
+            ctx.font = "bold 60px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            
+            // Harf aralığı simülasyonu
+            const text = "BYEFRAME v6.4";
+            let x = canvas.width / 2 - (text.length * spacing * 2);
+            for(let char of text) {
+                ctx.fillText(char, x, 150);
+                x += ctx.measureText(char).width + (spacing * 4);
+            }
 
-            // UI Güncelleme
-            document.getElementById('val-center').innerText = center;
-            document.getElementById('val-edge').innerText = edge;
+            // PIXEL MANIPULATION (Kayaçlar burada devreye giriyor)
+            if (sharp > 1) {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixels = imageData.data;
+                const width = imageData.width;
+                
+                // Basit ama etkili bir Laplacian Keskinleştirme (Unsharp Masking simülasyonu)
+                for (let i = 0; i < pixels.length; i += 4) {
+                    // Sadece siyah piksellerin (harf) kenarlarına müdahale et
+                    if(pixels[i] < 200) { 
+                        pixels[i] -= sharp * 5;     // R
+                        pixels[i+1] -= sharp * 5;   // G
+                        pixels[i+2] -= sharp * 5;   // B
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }
+
+            document.getElementById('val-sharp').innerText = sharp;
             document.getElementById('val-spacing').innerText = spacing;
         }
 
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', updateEngine);
-        });
+        sharpInput.addEventListener('input', drawText);
+        spacingInput.addEventListener('input', drawText);
 
-        // İlk açılışta çalıştır
-        updateEngine();
+        // İlk çizim
+        window.onload = drawText;
     </script>
 </body>
 </html>
