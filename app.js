@@ -1,102 +1,105 @@
-(function() {
-    const char = document.getElementById('testCharacter');
-    const sample = document.getElementById('sampleText');
-    const canvas = document.getElementById('distortionCanvas');
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByeFrame v6.3 - Anti-Bleed Recovery</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --letter-spacing: 3px;
+            --font-weight: 400;
+        }
 
-    const STORAGE_KEY = 'byeframe_v6_3_recovery';
-    const defaultProfiles = {
-        presbyopia: { deconv: 100, scale: 160, textStroke: 0.5, contrast: 150 },
-        myopia: { deconv: 50, scale: 120, textStroke: 0.2, contrast: 130 },
-        astigmatism: { deconv: 80, scale: 140, textStroke: 0.5, contrast: 140 }
-    };
+        body {
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: sans-serif;
+        }
 
-    let profiles = JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(JSON.stringify(defaultProfiles));
-    let currentCondition = 'presbyopia';
+        #reader-area {
+            margin-top: 50px;
+            padding: 20px;
+            width: 80%;
+            /* Filtre Uygulama Noktası */
+            filter: url(#antiBleedDeconv);
+            letter-spacing: var(--letter-spacing);
+            font-weight: var(--font-weight);
+            font-size: 24px;
+            line-height: 1.6;
+        }
 
-    function buildFilters() {
-        const p = profiles[currentCondition];
-        const old = document.getElementById('svg-engine');
-        if (old) old.remove();
+        .controls {
+            position: fixed;
+            bottom: 0;
+            background: #f0f0f0;
+            width: 100%;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            border-top: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
 
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.id = "svg-engine";
-        svg.setAttribute("style", "position:absolute;width:0;height:0");
-        const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    <div id="reader-area">
+        ByeFrame v6.3 Deneme Metni: Gözlüğe ihtiyaç duymadan net okuma hedefi. 
+        Bu metin, feConvolveMatrix kullanılarak de-convolution işlemine tabi tutulmaktadır. 
+        Işık dağılmasını engellemek için harf aralıkları optimize edilmiştir.
+    </div>
 
-        // Gelişmiş ama Dengeli De-convolution Matrisi
-        const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
-        filter.id = "inverseDeconv";
-        const matrix = document.createElementNS("http://www.w3.org/2000/svg", "feConvolveMatrix");
+    <svg style="height: 0; width: 0; position: absolute;">
+        <filter id="antiBleedDeconv">
+            <feConvolveMatrix 
+                id="matrixFilter"
+                order="3" 
+                preserveAlpha="true" 
+                kernelMatrix="0 -2 0 -2 180 -2 0 -2 0" />
+        </filter>
+    </svg>
+
+    <div class="controls">
+        <label>
+            De-conv Gücü (Merkez): <span id="val-deconv">180</span>
+            <input type="range" id="input-deconv" min="50" max="400" value="180">
+        </label>
+        <label>
+            Harf Aralığı (px): <span id="val-spacing">3</span>
+            <input type="range" id="input-spacing" min="0" max="10" value="3">
+        </label>
+    </div>
+
+    <script>
+        const matrixFilter = document.getElementById('matrixFilter');
+        const readerArea = document.getElementById('reader-area');
         
-        // v6.1'deki o tatlı noktayı yakalayan katsayılar
-        const x = p.deconv / 100;
-        const center = 1 + (4 * x); 
-        const edge = -x;
-        
-        matrix.setAttribute("order", "3");
-        matrix.setAttribute("kernelMatrix", `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`);
-        matrix.setAttribute("preserveAlpha", "true");
-        filter.appendChild(matrix);
-        defs.appendChild(filter);
+        const deconvInput = document.getElementById('input-deconv');
+        const spacingInput = document.getElementById('input-spacing');
 
-        svg.appendChild(defs);
-        document.body.appendChild(svg);
-    }
+        function updateFilters() {
+            const dc = deconvInput.value;
+            const sp = spacingInput.value;
 
-    function apply() {
-        const p = profiles[currentCondition];
-        
-        // Görüntü filtreleri
-        char.style.filter = `contrast(${p.contrast}%) brightness(110%) url(#inverseDeconv)`;
-        char.style.transform = `scale(${p.scale / 100})`;
-        
-        // Kenar hattı ve netlik dengesi
-        char.style.webkitTextStroke = p.textStroke > 0 ? `${p.textStroke}px rgba(255,255,255,0.9)` : '0px transparent';
-        
-        // De-conv arttıkça harfleri birbirinden hafifçe uzaklaştır (Harflerin birleşmesini önler)
-        char.style.letterSpacing = (p.deconv / 30) + "px";
+            // Matrisi güncelle: Köşeler sabit negatif, merkez dinamik
+            // "Anti-Bleed" için kenar değerlerini -2 tutuyoruz (Işık emici)
+            matrixFilter.setAttribute('kernelMatrix', `0 -2 0 -2 ${dc} -2 0 -2 0`);
+            
+            // CSS değişkenlerini güncelle
+            document.documentElement.style.setProperty('--letter-spacing', sp + 'px');
+            
+            // Görsel geri bildirim
+            document.getElementById('val-deconv').innerText = dc;
+            document.getElementById('val-spacing').innerText = sp;
+        }
 
-        updateUI(p);
-        drawMap(p);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
-    }
-
-    function updateUI(p) {
-        ['deconv', 'scale', 'textStroke', 'contrast'].forEach(id => {
-            const elVal = document.getElementById(id + 'Val');
-            const elSlider = document.getElementById(id + 'Slider');
-            if(elVal) elVal.innerText = p[id];
-            if(elSlider) elSlider.value = p[id];
-        });
-    }
-
-    function drawMap(p) {
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, 100, 100);
-        ctx.strokeStyle = '#3b82f6';
-        ctx.beginPath();
-        ctx.arc(50, 50, 30 + (p.deconv/20), 0, Math.PI * 2);
-        ctx.stroke();
-    }
-
-    ['deconv', 'scale', 'textStroke', 'contrast'].forEach(id => {
-        document.getElementById(id + 'Slider').oninput = (e) => {
-            profiles[currentCondition][id] = parseFloat(e.target.value);
-            buildFilters();
-            apply();
-        };
-    });
-
-    document.querySelectorAll('.condition-btn').forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll('.condition-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentCondition = btn.dataset.condition;
-            buildFilters();
-            apply();
-        };
-    });
-
-    buildFilters();
-    apply();
-})();
+        deconvInput.addEventListener('input', updateFilters);
+        spacingInput.addEventListener('input', updateFilters);
+    </script>
+</body>
+</html>
