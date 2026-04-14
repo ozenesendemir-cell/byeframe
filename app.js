@@ -3,105 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ByeFrame v6.4 - Canvas Core</title>
+    <title>ByeFrame v6.5 - Bypass Mode</title>
     <style>
-        body { background: #fff; font-family: sans-serif; margin: 0; padding: 20px; touch-action: manipulation; }
-        
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab { padding: 10px; border: 1px solid #ccc; opacity: 0.4; border-radius: 5px; }
-        .tab.active { opacity: 1; border: 2px solid #000; font-weight: bold; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #fff; 
+            font-family: sans-serif; 
+            overflow: hidden; /* Sayfa kaymasını engelle */
+        }
 
-        #canvas-container { width: 100%; overflow: hidden; border: 1px solid #eee; }
-        canvas { width: 100%; height: auto; image-rendering: pixelated; }
+        .header {
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            background: #eee;
+            font-size: 12px;
+        }
 
-        .controls { position: fixed; bottom: 0; left: 0; width: 100%; background: #f9f9f9; padding: 20px; border-top: 2px solid #ddd; display: grid; gap: 10px; box-sizing: border-box; }
-        .control-group { display: flex; justify-content: space-between; align-items: center; }
-        input { width: 60%; }
+        .active-tab { border-bottom: 2px solid red; font-weight: bold; }
+
+        #stage {
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* KRİTİK ALAN: Okuma Metni */
+        #text-target {
+            font-size: 20px;
+            text-align: center;
+            transition: transform 0.1s ease-out;
+            transform-origin: center;
+            will-change: transform, letter-spacing, filter;
+            line-height: 1.4;
+            padding: 20px;
+        }
+
+        .controls {
+            height: 35vh;
+            padding: 20px;
+            background: #fdfdfd;
+            box-sizing: border-box;
+        }
+
+        .control-row {
+            margin-bottom: 25px;
+        }
+
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: #555; }
+
+        input[type=range] {
+            width: 100%;
+            height: 30px; /* Mobilde daha kolay dokunmak için */
+        }
     </style>
 </head>
 <body>
 
-    <div class="tabs">
-        <div class="tab">Miyop</div>
-        <div class="tab active">Presbiopi (+2.5)</div>
-        <div class="tab">Astigmat</div>
+    <div class="header">
+        <span>Miyop</span>
+        <span class="active-tab">Presbiopi (+2.5)</span>
+        <span>Astigmat</span>
     </div>
 
-    <div id="canvas-container">
-        <canvas id="outputCanvas"></canvas>
+    <div id="stage">
+        <div id="text-target">
+            BYEFRAME OPERASYONU<br>
+            v6.5 Reset Modu<br>
+            <small>Bu metnin büyümesi ve keskinleşmesi lazım.</small>
+        </div>
     </div>
 
     <div class="controls">
-        <div class="control-group">
-            <label>Keskinlik (Matrix): <span id="val-sharp">1</span></label>
-            <input type="range" id="input-sharp" min="1" max="50" value="1" step="0.5">
+        <div class="control-row">
+            <label>Büyütme (Scale): <span id="val-scale">1.0</span></label>
+            <input type="range" id="input-scale" min="0.5" max="5" step="0.1" value="1">
         </div>
-        <div class="control-group">
-            <label>Harf Aralığı: <span id="val-spacing">2</span></label>
-            <input type="range" id="input-spacing" min="0" max="15" value="2">
+
+        <div class="control-row">
+            <label>Anti-Bleed (Keskinlik): <span id="val-sharp">0</span></label>
+            <input type="range" id="input-sharp" min="0" max="10" step="0.5" value="0">
         </div>
-        <div style="font-size: 10px; color: gray;">*Canvas Rendering Mode: Aktif</div>
+        
+        <div class="control-row">
+            <label>Harf Aralığı: <span id="val-spacing">0</span>px</label>
+            <input type="range" id="input-spacing" min="0" max="20" step="1" value="0">
+        </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('outputCanvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const sharpInput = document.getElementById('input-sharp');
-        const spacingInput = document.getElementById('input-spacing');
+        const target = document.getElementById('text-target');
+        
+        function update() {
+            const sc = document.getElementById('input-scale').value;
+            const sh = document.getElementById('input-sharp').value;
+            const sp = document.getElementById('input-spacing').value;
 
-        // Test metni ayarları
-        function drawText() {
-            const sharp = parseFloat(sharpInput.value);
-            const spacing = parseInt(spacingInput.value);
-            
-            // Canvas boyutunu ayarla
-            canvas.width = window.innerWidth * 2;
-            canvas.height = 400;
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Metin özellikleri
-            ctx.font = "bold 60px Arial";
-            ctx.fillStyle = "black";
-            ctx.textAlign = "center";
-            
-            // Harf aralığı simülasyonu
-            const text = "BYEFRAME v6.4";
-            let x = canvas.width / 2 - (text.length * spacing * 2);
-            for(let char of text) {
-                ctx.fillText(char, x, 150);
-                x += ctx.measureText(char).width + (spacing * 4);
-            }
+            // 1. Büyütme/Küçültme (CSS Transform - En hızlı yöntem)
+            target.style.transform = `scale(${sc})`;
 
-            // PIXEL MANIPULATION (Kayaçlar burada devreye giriyor)
-            if (sharp > 1) {
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const pixels = imageData.data;
-                const width = imageData.width;
-                
-                // Basit ama etkili bir Laplacian Keskinleştirme (Unsharp Masking simülasyonu)
-                for (let i = 0; i < pixels.length; i += 4) {
-                    // Sadece siyah piksellerin (harf) kenarlarına müdahale et
-                    if(pixels[i] < 200) { 
-                        pixels[i] -= sharp * 5;     // R
-                        pixels[i+1] -= sharp * 5;   // G
-                        pixels[i+2] -= sharp * 5;   // B
-                    }
-                }
-                ctx.putImageData(imageData, 0, 0);
-            }
+            // 2. Harf Aralığı (Bleeding engelleme)
+            target.style.letterSpacing = `${sp}px`;
 
-            document.getElementById('val-sharp').innerText = sharp;
-            document.getElementById('val-spacing').innerText = spacing;
+            // 3. Keskinleştirme (CSS Filter Contrast - Kayaçların basit hali)
+            // Kontrastı artırıp parlaklığı hafif kısarak harf kenarlarını topluyoruz
+            target.style.filter = `contrast(${100 + (sh * 20)}%) brightness(${100 - (sh * 2)}%)`;
+
+            // Değerleri yazdır
+            document.getElementById('val-scale').innerText = sc;
+            document.getElementById('val-sharp').innerText = sh;
+            document.getElementById('val-spacing').innerText = sp;
         }
 
-        sharpInput.addEventListener('input', drawText);
-        spacingInput.addEventListener('input', drawText);
+        // Tüm inputlara dinleyici ekle
+        document.querySelectorAll('input').forEach(el => {
+            el.addEventListener('input', update);
+        });
 
-        // İlk çizim
-        window.onload = drawText;
+        // Sayfa yüklendiğinde çalıştır
+        update();
     </script>
 </body>
 </html>
