@@ -2,14 +2,13 @@
     const char = document.getElementById('testCharacter');
     const sample = document.getElementById('sampleText');
     const canvas = document.getElementById('distortionCanvas');
-    const profileSelect = document.getElementById('profileSelect');
 
-    const STORAGE_KEY = 'byeframe_v6_1_final';
+    const STORAGE_KEY = 'byeframe_v6_2_final';
     const defaultProfiles = {
-        myopia: { deconv: 80, axis: 0, radial: -60, contrast: 150, textStroke: 0.8, scale: 130 },
-        hyperopia: { deconv: 75, axis: 0, radial: 65, contrast: 145, textStroke: 1.0, scale: 140 },
-        astigmatism: { deconv: 120, axis: 90, radial: 0, contrast: 180, textStroke: 1.2, scale: 140 },
-        presbyopia: { deconv: 160, axis: 0, radial: 10, contrast: 210, textStroke: 1.6, scale: 170 }
+        myopia: { deconv: 100, axis: 0, radial: -60, contrast: 150, textStroke: 0.1, scale: 130 },
+        hyperopia: { deconv: 150, axis: 0, radial: 60, contrast: 180, textStroke: 0.1, scale: 150 },
+        astigmatism: { deconv: 120, axis: 90, radial: 0, contrast: 180, textStroke: 0.1, scale: 140 },
+        presbyopia: { deconv: 250, axis: 0, radial: 10, contrast: 230, textStroke: 0.1, scale: 180 }
     };
 
     let profiles = JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(JSON.stringify(defaultProfiles));
@@ -23,16 +22,15 @@
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.id = "svg-engine";
         svg.setAttribute("style", "position:absolute;width:0;height:0");
-        
         const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
 
-        // De-convolution Matrisi
+        // Agresif De-convolution (v6.2: x5 çarpanı)
         const filter1 = document.createElementNS("http://www.w3.org/2000/svg", "filter");
         filter1.id = "inverseDeconv";
         const matrix = document.createElementNS("http://www.w3.org/2000/svg", "feConvolveMatrix");
         const x = p.deconv / 100;
-        const center = 1 + (4 * x * 3);
-        const edge = -(x * 3);
+        const center = 1 + (4 * x * 5); 
+        const edge = -(x * 5);
         matrix.setAttribute("order", "3");
         matrix.setAttribute("kernelMatrix", `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`);
         matrix.setAttribute("preserveAlpha", "true");
@@ -61,15 +59,24 @@
 
     function apply() {
         const p = profiles[currentCondition];
-        let f = `contrast(${p.contrast}%) url(#inverseDeconv)`;
+        let f = `contrast(${p.contrast}%) brightness(110%) url(#inverseDeconv)`;
         if(Math.abs(p.radial) > 10) f += ` url(#radialDist)`;
         
         char.style.filter = f;
         char.style.transform = `scale(${p.scale / 100}) rotate(${p.axis}deg)`;
-        char.style.webkitTextStroke = `${p.textStroke}px rgba(255,255,255,0.8)`;
+        
+        // Kenar Hattı İnceltme Mantığı
+        if (p.textStroke <= 0.2) {
+            char.style.webkitTextStroke = "0px transparent";
+            char.style.letterSpacing = (p.deconv / 15) + "px"; // Harfleri birbirinden ayır
+            char.style.opacity = "0.9";
+        } else {
+            char.style.webkitTextStroke = `${p.textStroke}px rgba(255,255,255,0.9)`;
+            char.style.letterSpacing = "normal";
+            char.style.opacity = "1";
+        }
         
         sample.style.filter = f;
-        sample.style.webkitTextStroke = `${p.textStroke/2}px rgba(255,255,255,0.8)`;
 
         updateUI(p);
         drawMap(p);
@@ -80,8 +87,10 @@
     function updateUI(p) {
         const fields = ['deconv', 'scale', 'radial', 'textStroke', 'axis', 'contrast'];
         fields.forEach(id => {
-            document.getElementById(id + 'Val').innerText = p[id];
-            document.getElementById(id + 'Slider').value = p[id];
+            const elVal = document.getElementById(id + 'Val');
+            const elSlider = document.getElementById(id + 'Slider');
+            if(elVal) elVal.innerText = p[id];
+            if(elSlider) elSlider.value = p[id];
         });
     }
 
@@ -101,7 +110,6 @@
         ctx.stroke();
     }
 
-    // Kontrolleri Bağla
     const sliders = ['deconv', 'scale', 'radial', 'textStroke', 'axis', 'contrast'];
     sliders.forEach(id => {
         document.getElementById(id + 'Slider').oninput = (e) => {
@@ -128,7 +136,6 @@
         apply();
     };
 
-    // Başlat
     buildFilters();
     apply();
 })();
