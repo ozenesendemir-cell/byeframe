@@ -3,103 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByeFrame v6.3 - Anti-Bleed Recovery</title>
+    <title>ByeFrame v6.3.1 - Stabilizer</title>
     <style>
         :root {
             --bg-color: #ffffff;
             --text-color: #000000;
-            --letter-spacing: 3px;
-            --font-weight: 400;
         }
 
         body {
             background-color: var(--bg-color);
-            margin: 0;
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 200px; /* Kontroller için yer */
         }
 
         #reader-area {
             margin-top: 50px;
-            padding: 20px;
-            width: 80%;
-            /* Filtre Uygulama Noktası */
-            filter: url(#antiBleedDeconv);
-            letter-spacing: var(--letter-spacing);
-            font-weight: var(--font-weight);
-            font-size: 24px;
-            line-height: 1.6;
+            padding: 40px;
+            width: 85%;
+            font-size: 28px; /* Presbiyopi için başlangıç boyutu */
+            line-height: 1.8;
+            /* Filtre burada aktif */
+            filter: url(#refinedDeconv);
+            transition: letter-spacing 0.2s;
         }
 
         .controls {
             position: fixed;
             bottom: 0;
-            background: #f0f0f0;
+            background: #e9e9e9;
             width: 100%;
-            padding: 20px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            border-top: 1px solid #ccc;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
         }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input[type=range] { width: 100%; margin: 10px 0; }
     </style>
 </head>
 <body>
 
     <div id="reader-area">
-        ByeFrame v6.3 Deneme Metni: Gözlüğe ihtiyaç duymadan net okuma hedefi. 
-        Bu metin, feConvolveMatrix kullanılarak de-convolution işlemine tabi tutulmaktadır. 
-        Işık dağılmasını engellemek için harf aralıkları optimize edilmiştir.
+        ByeFrame Operasyonu: v6.3.1 Stabilize Modu. <br>
+        Eğer "kayaçlar" çalışmıyorsa, Divisor parametresi matrisin enerjisini dengelemiyor demektir. 
+        Şimdi bu metindeki harflerin kenarlarındaki ışık halelerini (halo) yok etmeye odaklanıyoruz. 
+        Toprak Razgatlıoğlu'nun virajdaki keskinliği gibi harfleri keskinleştirmeliyiz.
     </div>
 
-    <svg style="height: 0; width: 0; position: absolute;">
-        <filter id="antiBleedDeconv">
+    <svg style="position: absolute; width: 0; height: 0;">
+        <filter id="refinedDeconv">
             <feConvolveMatrix 
-                id="matrixFilter"
+                id="mainMatrix"
                 order="3" 
                 preserveAlpha="true" 
-                kernelMatrix="0 -2 0 -2 180 -2 0 -2 0" />
+                divisor="1"
+                kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" />
         </filter>
     </svg>
 
     <div class="controls">
-        <label>
-            De-conv Gücü (Merkez): <span id="val-deconv">180</span>
-            <input type="range" id="input-deconv" min="50" max="400" value="180">
-        </label>
-        <label>
-            Harf Aralığı (px): <span id="val-spacing">3</span>
-            <input type="range" id="input-spacing" min="0" max="10" value="3">
-        </label>
+        <div class="control-group">
+            <label>De-conv (Merkez Gücü): <span id="val-center">5</span></label>
+            <input type="range" id="input-center" min="1" max="250" value="5">
+        </div>
+        <div class="control-group">
+            <label>Kenar Traşlama (Negatif): <span id="val-edge">-1</span></label>
+            <input type="range" id="input-edge" min="-50" max="0" value="-1">
+        </div>
+        <div class="control-group">
+            <label>Harf Arası (px): <span id="val-spacing">2</span></label>
+            <input type="range" id="input-spacing" min="0" max="20" value="2">
+        </div>
     </div>
 
     <script>
-        const matrixFilter = document.getElementById('matrixFilter');
-        const readerArea = document.getElementById('reader-area');
-        
-        const deconvInput = document.getElementById('input-deconv');
-        const spacingInput = document.getElementById('input-spacing');
+        const matrix = document.getElementById('mainMatrix');
+        const reader = document.getElementById('reader-area');
 
-        function updateFilters() {
-            const dc = deconvInput.value;
-            const sp = spacingInput.value;
+        function updateEngine() {
+            const center = parseFloat(document.getElementById('input-center').value);
+            const edge = parseFloat(document.getElementById('input-edge').value);
+            const spacing = document.getElementById('input-spacing').value;
 
-            // Matrisi güncelle: Köşeler sabit negatif, merkez dinamik
-            // "Anti-Bleed" için kenar değerlerini -2 tutuyoruz (Işık emici)
-            matrixFilter.setAttribute('kernelMatrix', `0 -2 0 -2 ${dc} -2 0 -2 0`);
+            // Matris Toplamı Hesaplama (Divisor)
+            // 3x3 matrisimizde 4 kenar aktif (0 -1 0, -1 5 -1, 0 -1 0 yapısı)
+            // Toplam = center + (4 * edge)
+            const sum = center + (4 * edge);
+            const divisor = sum <= 0 ? 1 : sum; // 0'a bölme hatasını engelle
+
+            // Matris Dizilimi
+            const k = `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`;
             
-            // CSS değişkenlerini güncelle
-            document.documentElement.style.setProperty('--letter-spacing', sp + 'px');
+            matrix.setAttribute('kernelMatrix', k);
+            matrix.setAttribute('divisor', divisor);
             
-            // Görsel geri bildirim
-            document.getElementById('val-deconv').innerText = dc;
-            document.getElementById('val-spacing').innerText = sp;
+            reader.style.letterSpacing = spacing + 'px';
+
+            // UI Güncelleme
+            document.getElementById('val-center').innerText = center;
+            document.getElementById('val-edge').innerText = edge;
+            document.getElementById('val-spacing').innerText = spacing;
         }
 
-        deconvInput.addEventListener('input', updateFilters);
-        spacingInput.addEventListener('input', updateFilters);
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', updateEngine);
+        });
+
+        // İlk açılışta çalıştır
+        updateEngine();
     </script>
 </body>
 </html>
