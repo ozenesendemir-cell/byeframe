@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ByeFrame v8.2 - Precision Final</title>
+    <title>ByeFrame v8.3 - Final Focus</title>
     <style>
         body { 
             margin: 0; background: black; color: white; 
@@ -13,37 +13,45 @@
 
         #display-stage { 
             flex: 1; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; padding: 10px;
+            align-items: center; justify-content: center; padding: 15px;
         }
 
         #viewport { filter: url(#byeEngine); text-align: center; }
-        .test-img { width: 100%; max-width: 230px; height: auto; border-radius: 8px; margin: 5px 0; }
-        #odak { font-size: 11px; font-weight: 700; margin-bottom: 5px; letter-spacing: 1px; }
+        
+        /* GERÇEK METİN TESTİ */
+        #text-test {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.6;
+            margin-top: 10px;
+            max-width: 280px;
+        }
+
+        .test-img { width: 100%; max-width: 220px; height: auto; border-radius: 8px; margin-bottom: 5px; }
 
         .controls { 
-            height: 45vh; background: #0d0d0d; padding: 20px; 
+            height: 45vh; background: #0a0a0a; padding: 20px; 
             border-top: 2px solid #007bff; box-sizing: border-box;
             display: flex; flex-direction: column; justify-content: space-around;
         }
 
         .row { width: 100%; }
         .l-wrap { display: flex; justify-content: space-between; margin-bottom: 2px; }
-        label { color: #007bff; font-size: 10px; font-weight: bold; }
-        span { font-size: 11px; color: #fff; font-family: monospace; }
+        label { color: #007bff; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        span { font-size: 11px; color: #fff; font-family: monospace; border: 1px solid #333; padding: 0 4px; }
         
-        input[type=range] { 
-            width: 100%; height: 35px;
-            accent-color: #007bff;
-        }
+        input[type=range] { width: 100%; height: 35px; accent-color: #007bff; }
     </style>
 </head>
 <body>
 
     <div id="display-stage">
         <div id="viewport">
-            <div id="odak">BYEFRAME v8.2 PRECISION</div>
             <img src="https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?auto=format&fit=crop&w=400&q=80" class="test-img">
-            <p style="font-size: 9px; color: #666; margin:0;">0-150 Arası Hassas Keskinlik Testi</p>
+            <div id="text-test">
+                v8.3 Mikro Okuma Testi:<br>
+                Eğer bu metindeki harflerin içindeki boşlukları ve kenarları net seçebiliyorsan, hassas ayar tutmuş demektir.
+            </div>
         </div>
     </div>
 
@@ -60,16 +68,16 @@
 
     <div class="controls">
         <div class="row">
-            <div class="l-wrap"><label>HASSAS KESKİNLİK</label><span id="v1">50</span></div>
-            <input type="range" id="s1" min="0" max="250" value="50" oninput="up()">
+            <div class="l-wrap"><label>HASSAS KESKİNLİK</label><span id="v1">0</span></div>
+            <input type="range" id="s1" min="0" max="250" value="0" oninput="up()">
         </div>
         <div class="row">
-            <div class="l-wrap"><label>KONTRAST DENGESİ</label><span id="v2">1.5</span></div>
-            <input type="range" id="s2" min="1" max="4" step="0.1" value="1.5" oninput="up()">
+            <div class="l-wrap"><label>KONTRAST DENGESİ</label><span id="v2">1.0</span></div>
+            <input type="range" id="s2" min="1" max="4" step="0.1" value="1.0" oninput="up()">
         </div>
         <div class="row">
-            <div class="l-wrap"><label>ANTI-HALO (İNCELTME)</label><span id="v3">0.4</span></div>
-            <input type="range" id="s3" min="0" max="1.2" step="0.02" value="0.4" oninput="up()">
+            <div class="l-wrap"><label>ANTI-HALO (İNCELTME)</label><span id="v3">0.00</span></div>
+            <input type="range" id="s3" min="0" max="1.0" step="0.02" value="0" oninput="up()">
         </div>
     </div>
 
@@ -86,7 +94,9 @@
             var funcs = document.querySelectorAll('#ct feFuncR, #ct feFuncG, #ct feFuncB');
             funcs.forEach(f => f.setAttribute('slope', c));
 
-            document.getElementById('viewport').style.webkitTextStroke = h + "px black";
+            // Metne Anti-Halo uygula
+            document.getElementById('text-test').style.webkitTextStroke = h + "px black";
+
             document.getElementById('v1').innerText = s;
             document.getElementById('v2').innerText = c;
             document.getElementById('v3').innerText = h;
