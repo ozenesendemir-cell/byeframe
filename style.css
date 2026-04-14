@@ -1,24 +1,26 @@
-/* style.css eklemeleri */
-.shimmer-target {
-  display: inline-block;
-  transition: all 0.02s linear;
-  will-change: transform; /* Performans için şart */
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #05070a; color: #eef2ff; font-family: sans-serif; overflow: hidden; height: 100vh; }
 
-.shimmer-card {
-  border: 2px solid #3b82f6;
-  background: #0f1a2e;
-}
+.top-bar { background: #0a0c12; padding: 0.8rem; display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; }
+.badge { font-size: 0.6rem; background: #3b82f6; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
 
-.shimmer-toggle {
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px;
-  background: #3b82f6;
-  border: none;
-  border-radius: 40px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
-/* Mevcut diğer stillerini koru */
+.focal-area { flex: 1; margin-bottom: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.visualizer-container { position: absolute; top: 20px; right: 20px; text-align: center; opacity: 0.7; }
+#distortionCanvas { border: 1px solid #3b82f633; border-radius: 50%; }
+
+.engine-target { display: inline-block; transition: none; }
+#testCharacter { font-size: 18vw; font-weight: 800; text-shadow: 0 0 0 #000; }
+.sample-text-container { max-width: 80%; text-align: center; margin-top: 2rem; }
+
+.control-dock { position: fixed; bottom: 0; width: 100%; background: #0a0c12; border-top: 2px solid #3b82f6; height: 380px; overflow-y: auto; padding: 1rem; }
+.condition-tabs { display: flex; gap: 8px; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 8px; }
+.condition-btn { background: #1e293b; color: #94a3b8; border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; cursor: pointer; }
+.condition-btn.active { background: #3b82f6; color: white; }
+
+.sliders-grid { display: grid; grid-template-columns: 1fr; gap: 0.8rem; }
+.slider-card { background: #161b26; padding: 10px; border-radius: 12px; border: 1px solid #1e293b; }
+.slider-card.highlight { border-color: #3b82f6; background: #1e293b; }
+.slider-card label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px; font-weight: bold; }
+.thumb-slider { width: 100%; height: 30px; cursor: pointer; }
+
+@media (min-width: 600px) { .sliders-grid { grid-template-columns: 1fr 1fr; } }
