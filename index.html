@@ -2,13 +2,17 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>ByeFrame v6.1 · Inverse Distortion Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>ByeFrame v6.1 · Optik Laboratuvar</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="top-bar">
-    <div class="logo-section"><span>👁️ ByeFrame</span> <span class="badge">V6.1 ENGINE</span></div>
+    <div class="logo-section">
+      <span class="logo-icon">👁️</span>
+      <span class="logo-text">ByeFrame</span>
+      <span class="badge">V6.1 ENGINE</span>
+    </div>
     <div class="top-controls">
       <select id="profileSelect" class="profile-dropdown"></select>
       <button id="panicResetBtn" class="panic-button">⟳ RESET</button>
@@ -18,13 +22,16 @@
   <main class="focal-area">
     <div class="visualizer-container">
       <canvas id="distortionCanvas" width="120" height="120"></canvas>
-      <div class="test-label">DISTORTION MAP</div>
+      <div class="test-label">OPTİK HARİTA</div>
     </div>
 
-    <div id="testCharacter" class="engine-target">8</div>
+    <div class="focal-container">
+      <div id="testCharacter" class="engine-target">8</div>
+      <div class="test-label">MERKEZİ ODAK</div>
+    </div>
     
     <div class="sample-text-container">
-      <p id="sampleText" class="engine-target">Ters çarpıtma motoru aktif. De-convolution sürgüsü ile gözünüzün oluşturduğu 'sis' tabakasını kırmayı deneyin.</p>
+      <p id="sampleText" class="engine-target">Ters çarpıtma motoru aktif. De-convolution sürgüsü ile harf kenarlarındaki 'bulutlanmayı' kırmayı deneyin.</p>
     </div>
   </main>
 
@@ -42,11 +49,11 @@
         <input type="range" id="deconvSlider" min="0" max="200" step="1" value="0" class="thumb-slider">
       </div>
       <div class="slider-card">
-        <label>🔍 BÜYÜTME <span id="scaleVal">100</span>%</label>
+        <label>🔍 BÜYÜTME (Zoom) <span id="scaleVal">100</span>%</label>
         <input type="range" id="scaleSlider" min="100" max="250" step="5" value="100" class="thumb-slider">
       </div>
       <div class="slider-card">
-        <label>📏 RADYAL ÇARPITMA <span id="radialVal">0</span></label>
+        <label>📏 RADYAL BÜKME <span id="radialVal">0</span></label>
         <input type="range" id="radialSlider" min="-100" max="100" step="1" value="0" class="thumb-slider">
       </div>
       <div class="slider-card">
