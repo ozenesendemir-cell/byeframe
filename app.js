@@ -3,16 +3,15 @@
     const sample = document.getElementById('sampleText');
     const canvas = document.getElementById('distortionCanvas');
 
-    const STORAGE_KEY = 'byeframe_v6_2_final';
+    const STORAGE_KEY = 'byeframe_v6_3_recovery';
     const defaultProfiles = {
-        myopia: { deconv: 100, axis: 0, radial: -60, contrast: 150, textStroke: 0.1, scale: 130 },
-        hyperopia: { deconv: 150, axis: 0, radial: 60, contrast: 180, textStroke: 0.1, scale: 150 },
-        astigmatism: { deconv: 120, axis: 90, radial: 0, contrast: 180, textStroke: 0.1, scale: 140 },
-        presbyopia: { deconv: 250, axis: 0, radial: 10, contrast: 230, textStroke: 0.1, scale: 180 }
+        presbyopia: { deconv: 100, scale: 160, textStroke: 0.5, contrast: 150 },
+        myopia: { deconv: 50, scale: 120, textStroke: 0.2, contrast: 130 },
+        astigmatism: { deconv: 80, scale: 140, textStroke: 0.5, contrast: 140 }
     };
 
     let profiles = JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(JSON.stringify(defaultProfiles));
-    let currentCondition = localStorage.getItem('bf_condition') || 'presbyopia';
+    let currentCondition = 'presbyopia';
 
     function buildFilters() {
         const p = profiles[currentCondition];
@@ -24,34 +23,21 @@
         svg.setAttribute("style", "position:absolute;width:0;height:0");
         const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
 
-        // Agresif De-convolution (v6.2: x5 çarpanı)
-        const filter1 = document.createElementNS("http://www.w3.org/2000/svg", "filter");
-        filter1.id = "inverseDeconv";
+        // Gelişmiş ama Dengeli De-convolution Matrisi
+        const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+        filter.id = "inverseDeconv";
         const matrix = document.createElementNS("http://www.w3.org/2000/svg", "feConvolveMatrix");
+        
+        // v6.1'deki o tatlı noktayı yakalayan katsayılar
         const x = p.deconv / 100;
-        const center = 1 + (4 * x * 5); 
-        const edge = -(x * 5);
+        const center = 1 + (4 * x); 
+        const edge = -x;
+        
         matrix.setAttribute("order", "3");
         matrix.setAttribute("kernelMatrix", `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`);
         matrix.setAttribute("preserveAlpha", "true");
-        filter1.appendChild(matrix);
-        defs.appendChild(filter1);
-
-        // Radyal Displacement
-        const filter2 = document.createElementNS("http://www.w3.org/2000/svg", "filter");
-        filter2.id = "radialDist";
-        const turb = document.createElementNS("http://www.w3.org/2000/svg", "feTurbulence");
-        turb.setAttribute("type", "fractalNoise");
-        turb.setAttribute("baseFrequency", "0.01");
-        turb.setAttribute("numOctaves", "1");
-        turb.setAttribute("result", "noise");
-        const disp = document.createElementNS("http://www.w3.org/2000/svg", "feDisplacementMap");
-        disp.setAttribute("in", "SourceGraphic");
-        disp.setAttribute("in2", "noise");
-        disp.setAttribute("scale", Math.abs(p.radial) / 4);
-        filter2.appendChild(turb);
-        filter2.appendChild(disp);
-        defs.appendChild(filter2);
+        filter.appendChild(matrix);
+        defs.appendChild(filter);
 
         svg.appendChild(defs);
         document.body.appendChild(svg);
@@ -59,34 +45,24 @@
 
     function apply() {
         const p = profiles[currentCondition];
-        let f = `contrast(${p.contrast}%) brightness(110%) url(#inverseDeconv)`;
-        if(Math.abs(p.radial) > 10) f += ` url(#radialDist)`;
         
-        char.style.filter = f;
-        char.style.transform = `scale(${p.scale / 100}) rotate(${p.axis}deg)`;
+        // Görüntü filtreleri
+        char.style.filter = `contrast(${p.contrast}%) brightness(110%) url(#inverseDeconv)`;
+        char.style.transform = `scale(${p.scale / 100})`;
         
-        // Kenar Hattı İnceltme Mantığı
-        if (p.textStroke <= 0.2) {
-            char.style.webkitTextStroke = "0px transparent";
-            char.style.letterSpacing = (p.deconv / 15) + "px"; // Harfleri birbirinden ayır
-            char.style.opacity = "0.9";
-        } else {
-            char.style.webkitTextStroke = `${p.textStroke}px rgba(255,255,255,0.9)`;
-            char.style.letterSpacing = "normal";
-            char.style.opacity = "1";
-        }
+        // Kenar hattı ve netlik dengesi
+        char.style.webkitTextStroke = p.textStroke > 0 ? `${p.textStroke}px rgba(255,255,255,0.9)` : '0px transparent';
         
-        sample.style.filter = f;
+        // De-conv arttıkça harfleri birbirinden hafifçe uzaklaştır (Harflerin birleşmesini önler)
+        char.style.letterSpacing = (p.deconv / 30) + "px";
 
         updateUI(p);
         drawMap(p);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
-        localStorage.setItem('bf_condition', currentCondition);
     }
 
     function updateUI(p) {
-        const fields = ['deconv', 'scale', 'radial', 'textStroke', 'axis', 'contrast'];
-        fields.forEach(id => {
+        ['deconv', 'scale', 'textStroke', 'contrast'].forEach(id => {
             const elVal = document.getElementById(id + 'Val');
             const elSlider = document.getElementById(id + 'Slider');
             if(elVal) elVal.innerText = p[id];
@@ -96,22 +72,14 @@
 
     function drawMap(p) {
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, 120, 120);
+        ctx.clearRect(0, 0, 100, 100);
         ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 2;
         ctx.beginPath();
-        for (let i = 0; i <= 360; i += 5) {
-            let r = 35 + (p.radial / 10);
-            if (currentCondition === 'astigmatism') r += Math.cos((i - p.axis) * Math.PI / 90) * 10;
-            const x = 60 + r * Math.cos(i * Math.PI / 180);
-            const y = 60 + r * Math.sin(i * Math.PI / 180);
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
+        ctx.arc(50, 50, 30 + (p.deconv/20), 0, Math.PI * 2);
         ctx.stroke();
     }
 
-    const sliders = ['deconv', 'scale', 'radial', 'textStroke', 'axis', 'contrast'];
-    sliders.forEach(id => {
+    ['deconv', 'scale', 'textStroke', 'contrast'].forEach(id => {
         document.getElementById(id + 'Slider').oninput = (e) => {
             profiles[currentCondition][id] = parseFloat(e.target.value);
             buildFilters();
@@ -127,14 +95,7 @@
             buildFilters();
             apply();
         };
-        if(btn.dataset.condition === currentCondition) btn.classList.add('active');
     });
-
-    document.getElementById('panicResetBtn').onclick = () => {
-        profiles[currentCondition] = JSON.parse(JSON.stringify(defaultProfiles[currentCondition]));
-        buildFilters();
-        apply();
-    };
 
     buildFilters();
     apply();
