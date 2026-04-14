@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>ByeFrame v6.1 · Optik Laboratuvar</title>
+  <title>ByeFrame v6.2 · Deep-Point Lab</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <div class="logo-section">
       <span class="logo-icon">👁️</span>
       <span class="logo-text">ByeFrame</span>
-      <span class="badge">V6.1 ENGINE</span>
+      <span class="badge">V6.2 DEEP-POINT</span>
     </div>
     <div class="top-controls">
       <select id="profileSelect" class="profile-dropdown"></select>
@@ -31,42 +31,42 @@
     </div>
     
     <div class="sample-text-container">
-      <p id="sampleText" class="engine-target">Ters çarpıtma motoru aktif. De-convolution sürgüsü ile harf kenarlarındaki 'bulutlanmayı' kırmayı deneyin.</p>
+      <p id="sampleText" class="engine-target">Ters çarpıtma motoru (v6.2) aktif. De-convolution sürgüsü 500 sınırına çekildi.</p>
     </div>
   </main>
 
   <div class="control-dock">
     <div class="condition-tabs">
-      <button class="condition-btn active" data-condition="myopia">Miyop</button>
+      <button class="condition-btn" data-condition="myopia">Miyop</button>
       <button class="condition-btn" data-condition="hyperopia">Hipermetrop</button>
       <button class="condition-btn" data-condition="astigmatism">Astigmat</button>
-      <button class="condition-btn" data-condition="presbyopia">Presbiyopi</button>
+      <button class="condition-btn active" data-condition="presbyopia">Presbiyopi</button>
     </div>
 
     <div class="sliders-grid">
       <div class="slider-card highlight">
         <label>🌀 TERS KESKİNLİK (De-conv) <span id="deconvVal">0</span></label>
-        <input type="range" id="deconvSlider" min="0" max="200" step="1" value="0" class="thumb-slider">
+        <input type="range" id="deconvSlider" min="0" max="500" step="1" value="0" class="thumb-slider">
       </div>
       <div class="slider-card">
         <label>🔍 BÜYÜTME (Zoom) <span id="scaleVal">100</span>%</label>
         <input type="range" id="scaleSlider" min="100" max="250" step="5" value="100" class="thumb-slider">
       </div>
       <div class="slider-card">
+        <label>✏️ KENAR HATTI (İnceltme) <span id="textStrokeVal">0</span>px</label>
+        <input type="range" id="textStrokeSlider" min="0" max="3" step="0.1" value="0" class="thumb-slider">
+      </div>
+      <div class="slider-card">
+        <label>🔆 KONTRAST <span id="contrastVal">100</span>%</label>
+        <input type="range" id="contrastSlider" min="100" max="300" step="1" value="100" class="thumb-slider">
+      </div>
+      <div class="slider-card">
         <label>📏 RADYAL BÜKME <span id="radialVal">0</span></label>
         <input type="range" id="radialSlider" min="-100" max="100" step="1" value="0" class="thumb-slider">
       </div>
       <div class="slider-card">
-        <label>✏️ KENAR HATTI <span id="textStrokeVal">0</span>px</label>
-        <input type="range" id="textStrokeSlider" min="0" max="3" step="0.1" value="0" class="thumb-slider">
-      </div>
-      <div class="slider-card">
         <label>📐 ASTİGMAT AKSI <span id="axisVal">0</span>°</label>
         <input type="range" id="axisSlider" min="0" max="180" step="1" value="0" class="thumb-slider">
-      </div>
-      <div class="slider-card">
-        <label>🔆 KONTRAST <span id="contrastVal">100</span>%</label>
-        <input type="range" id="contrastSlider" min="100" max="250" step="1" value="100" class="thumb-slider">
       </div>
     </div>
   </div>
