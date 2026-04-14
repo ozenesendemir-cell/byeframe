@@ -3,39 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ByeFrame v7.0</title>
+    <title>ByeFrame v7.1 - Master Switch</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; text-align: center; }
-        #view { height: 60vh; display: flex; align-items: center; justify-content: center; }
-        #target { font-size: 80px; font-weight: bold; transition: none; }
-        .controls { height: 40vh; background: #111; padding: 20px; border-top: 1px solid #333; box-sizing: border-box; }
-        .row { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 10px; color: #007bff; font-size: 14px; }
-        input { width: 100%; height: 40px; }
+        :root { --main-blue: #007bff; --bg-dark: #000000; --panel-dark: #111111; }
+        
+        body { 
+            margin: 0; background: var(--bg-dark); color: white; 
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; 
+            display: flex; flex-direction: column; height: 100vh;
+        }
+
+        /* Sekme Sistemi */
+        .tabs { 
+            display: flex; background: #0a0a0a; border-bottom: 1px solid #333; 
+            justify-content: space-around; padding: 10px 0;
+        }
+        .tab { 
+            font-size: 12px; color: #666; padding: 5px 15px; border-radius: 20px;
+            border: 1px solid transparent; transition: 0.3s;
+        }
+        .tab.active { 
+            color: var(--main-blue); border-color: var(--main-blue); font-weight: bold; 
+        }
+
+        /* Görüntüleme Alanı */
+        #display-stage {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            filter: url(#optikMotor);
+        }
+
+        #odak-hedefi {
+            font-size: 100px; font-weight: bold; margin: 0;
+            line-height: 1; text-align: center;
+            will-change: font-size, letter-spacing;
+        }
+
+        .info-text {
+            background: rgba(255,255,255,0.05); padding: 10px 20px;
+            border-radius: 10px; font-size: 13px; color: #aaa; margin-top: 20px;
+        }
+
+        /* Kontrol Paneli */
+        .controls {
+            background: var(--panel-dark); padding: 25px;
+            border-top: 2px solid #222; box-sizing: border-box;
+        }
+
+        .control-row { margin-bottom: 25px; }
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .label-row label { font-size: 12px; font-weight: bold; color: var(--main-blue); }
+        .label-row span { font-size: 12px; color: #eee; }
+
+        input[type=range] {
+            width: 100%; height: 8px; background: #333;
+            border-radius: 5px; accent-color: var(--main-blue);
+        }
     </style>
 </head>
 <body>
-    <div id="view">
-        <div id="target" style="filter: url(#optikMotor);">8</div>
+
+    <div class="tabs">
+        <div class="tab">MİYOP</div>
+        <div class="tab active">PRESBİOPİ (+2.5)</div>
+        <div class="tab">ASTİGMAT</div>
+    </div>
+
+    <div id="display-stage">
+        <div id="odak-hedefi">8</div>
+        <div class="info-text">Recovery Modu v7.1 - Optik Motor Aktif</div>
     </div>
 
     <svg style="position: absolute; width: 0; height: 0;">
-        <filter id="optikMotor">
-            <feConvolveMatrix id="matrix" order="3" preserveAlpha="true" kernelMatrix="0 0 0 0 1 0 0 0 0" />
+        <filter id="optikMotor" color-interpolation-filters="sRGB">
+            <feConvolveMatrix 
+                id="mainMatrix"
+                order="3" 
+                preserveAlpha="true" 
+                divisor="1"
+                kernelMatrix="0 0 0 0 1 0 0 0 0" />
         </filter>
     </svg>
 
     <div class="controls">
-        <div class="row">
-            <label>BÜYÜTME: <span id="val-zoom">80</span>px</label>
-            <input type="range" id="slider-zoom" min="20" max="400" value="80">
+        <div class="control-row">
+            <div class="label-row">
+                <label>TERS KESKİNLİK (DE-CONV)</label>
+                <span id="v-sharp">0</span>
+            </div>
+            <input type="range" id="i-sharp" min="0" max="350" value="0">
         </div>
-        <div class="row">
-            <label>KESKİNLİK (DE-CONV): <span id="val-sharp">0</span></label>
-            <input type="range" id="slider-sharp" min="0" max="100" value="0">
+
+        <div class="control-row">
+            <div class="label-row">
+                <label>BÜYÜTME (ZOOM)</label>
+                <span id="v-zoom">100</span>
+            </div>
+            <input type="range" id="i-zoom" min="50" max="400" value="100">
+        </div>
+
+        <div class="control-row">
+            <div class="label-row">
+                <label>HARF ARALIĞI (ANTI-BLEED)</label>
+                <span id="v-spacing">0</span>
+            </div>
+            <input type="range" id="i-spacing" min="0" max="30" value="0">
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        const target = document.getElementById('odak-hedefi');
+        const matrix = document.getElementById('mainMatrix');
+        
+        const inSharp = document.getElementById('i-sharp');
+        const inZoom = document.getElementById('i-zoom');
+        const inSpace = document.getElementById('i-spacing');
+
+        const valSharp = document.getElementById('v-sharp');
+        const valZoom = document.getElementById('v-zoom');
+        const valSpace = document.getElementById('v-spacing');
+
+        function runEngine() {
+            // 1. Değerleri Al
+            const s = parseFloat(inSharp.value);
+            const z = parseFloat(inZoom.value);
+            const p = parseFloat(inSpace.value);
+
+            // 2. Zoom & Spacing Uygula
+            target.style.fontSize = z + "px";
+            target.style.letterSpacing = p + "px";
+
+            // 3. De-convolution (Kayaç) Matrisi Hesapla
+            // s arttıkça kenarlar keskinleşir, merkez parlar
+            // 150-220 bandı senin yakaladığın o meşhur nokta
+            const edge = -(s / 20).toFixed(2);
+            const center = (1 - (edge * 4)).toFixed(2);
+            
+            // Matris Dizilimi (Haç Tipi Keskinleştirme)
+            const k = `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`;
+            matrix.setAttribute('kernelMatrix', k);
+
+            // 4. UI Güncelle
+            valSharp.innerText = s;
+            valZoom.innerText = z + "px";
+            valSpace.innerText = p + "px";
+        }
+
+        // Dinleyiciler
+        inSharp.oninput = runEngine;
+        inZoom.oninput = runEngine;
+        inSpace.oninput = runEngine;
+
+        // Start
+        runEngine();
+    </script>
 </body>
 </html>
