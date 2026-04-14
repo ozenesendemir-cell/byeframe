@@ -1,66 +1,41 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>ByeFrame v6.3 · Recovery Mode</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ByeFrame v7.0</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; text-align: center; }
+        #view { height: 60vh; display: flex; align-items: center; justify-content: center; }
+        #target { font-size: 80px; font-weight: bold; transition: none; }
+        .controls { height: 40vh; background: #111; padding: 20px; border-top: 1px solid #333; box-sizing: border-box; }
+        .row { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 10px; color: #007bff; font-size: 14px; }
+        input { width: 100%; height: 40px; }
+    </style>
 </head>
 <body>
-  <div class="top-bar">
-    <div class="logo-section">
-      <span class="logo-icon">👁️</span>
-      <span class="logo-text">ByeFrame</span>
-      <span class="badge">V6.3 RECOVERY</span>
-    </div>
-    <div class="top-controls">
-      <select id="profileSelect" class="profile-dropdown"></select>
-      <button id="panicResetBtn" class="panic-button">⟳ RESET</button>
-    </div>
-  </div>
-
-  <main class="focal-area">
-    <div class="visualizer-container">
-      <canvas id="distortionCanvas" width="100" height="100"></canvas>
-      <div class="test-label">OPTİK MAP</div>
+    <div id="view">
+        <div id="target" style="filter: url(#optikMotor);">8</div>
     </div>
 
-    <div class="focal-container">
-      <div id="testCharacter" class="engine-target">8</div>
-      <div class="test-label">ODAK HEDEFİ</div>
-    </div>
-    
-    <div class="sample-text-container">
-      <p id="sampleText" class="engine-target">Recovery Modu (v6.3). Yakaladığımız o hassas noktayı bulmak için yavaşça kaydırın.</p>
-    </div>
-  </main>
+    <svg style="position: absolute; width: 0; height: 0;">
+        <filter id="optikMotor">
+            <feConvolveMatrix id="matrix" order="3" preserveAlpha="true" kernelMatrix="0 0 0 0 1 0 0 0 0" />
+        </filter>
+    </svg>
 
-  <div class="control-dock">
-    <div class="condition-tabs">
-      <button class="condition-btn" data-condition="myopia">Miyop</button>
-      <button class="condition-btn active" data-condition="presbyopia">Presbiyopi</button>
-      <button class="condition-btn" data-condition="astigmatism">Astigmat</button>
+    <div class="controls">
+        <div class="row">
+            <label>BÜYÜTME: <span id="val-zoom">80</span>px</label>
+            <input type="range" id="slider-zoom" min="20" max="400" value="80">
+        </div>
+        <div class="row">
+            <label>KESKİNLİK (DE-CONV): <span id="val-sharp">0</span></label>
+            <input type="range" id="slider-sharp" min="0" max="100" value="0">
+        </div>
     </div>
 
-    <div class="sliders-grid">
-      <div class="slider-card highlight">
-        <label>🌀 TERS KESKİNLİK (De-conv) <span id="deconvVal">0</span></label>
-        <input type="range" id="deconvSlider" min="0" max="400" step="1" value="0" class="thumb-slider">
-      </div>
-      <div class="slider-card">
-        <label>🔍 BÜYÜTME (Zoom) <span id="scaleVal">100</span>%</label>
-        <input type="range" id="scaleSlider" min="100" max="250" step="5" value="100" class="thumb-slider">
-      </div>
-      <div class="slider-card">
-        <label>✏️ KENAR HATTI <span id="textStrokeVal">0</span>px</label>
-        <input type="range" id="textStrokeSlider" min="0" max="4" step="0.1" value="0" class="thumb-slider">
-      </div>
-      <div class="slider-card">
-        <label>🔆 KONTRAST <span id="contrastVal">100</span>%</label>
-        <input type="range" id="contrastSlider" min="100" max="250" step="1" value="100" class="thumb-slider">
-      </div>
-    </div>
-  </div>
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
