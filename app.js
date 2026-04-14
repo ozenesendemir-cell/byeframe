@@ -3,128 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ByeFrame v6.5 - Bypass Mode</title>
+    <title>ByeFrame v6.6 - Engine Rebuild</title>
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background: #fff; 
-            font-family: sans-serif; 
-            overflow: hidden; /* Sayfa kaymasını engelle */
+        :root {
+            --zoom: 1;
+            --spacing: 0px;
+            --stroke: 0px;
         }
 
-        .header {
-            padding: 10px;
+        body {
+            margin: 0;
+            background: #000; /* Ekran görüntündeki gibi koyu tema */
+            color: #fff;
+            font-family: sans-serif;
+            overflow: hidden;
             display: flex;
-            justify-content: space-around;
-            background: #eee;
-            font-size: 12px;
+            flex-direction: column;
+            height: 100vh;
         }
 
-        .active-tab { border-bottom: 2px solid red; font-weight: bold; }
-
-        #stage {
-            height: 60vh;
+        /* Görüntüleme Alanı */
+        #display-area {
+            flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            border-bottom: 1px solid #ddd;
+            padding: 20px;
+            /* Filtre Uygulama */
+            filter: url(#deconvFilter);
         }
 
-        /* KRİTİK ALAN: Okuma Metni */
-        #text-target {
-            font-size: 20px;
+        #odak-hedefi {
+            font-size: calc(80px * var(--zoom));
+            font-weight: bold;
+            margin: 0;
+            letter-spacing: var(--spacing);
+            -webkit-text-stroke: var(--stroke) #fff;
+        }
+
+        .info-box {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 15px;
             text-align: center;
-            transition: transform 0.1s ease-out;
-            transform-origin: center;
-            will-change: transform, letter-spacing, filter;
-            line-height: 1.4;
-            padding: 20px;
+            font-size: 14px;
+            max-width: 80%;
+            margin-top: 20px;
         }
 
+        /* Kontrol Paneli */
         .controls {
-            height: 35vh;
+            background: #0a0a0a;
             padding: 20px;
-            background: #fdfdfd;
-            box-sizing: border-box;
+            border-top: 1px solid #333;
         }
 
-        .control-row {
-            margin-bottom: 25px;
+        .control-group {
+            margin-bottom: 20px;
         }
 
-        label { display: block; font-size: 14px; margin-bottom: 5px; color: #555; }
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #aaa;
+        }
 
         input[type=range] {
             width: 100%;
-            height: 30px; /* Mobilde daha kolay dokunmak için */
+            height: 6px;
+            background: #333;
+            border-radius: 5px;
+            accent-color: #007bff;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <span>Miyop</span>
-        <span class="active-tab">Presbiopi (+2.5)</span>
-        <span>Astigmat</span>
-    </div>
-
-    <div id="stage">
-        <div id="text-target">
-            BYEFRAME OPERASYONU<br>
-            v6.5 Reset Modu<br>
-            <small>Bu metnin büyümesi ve keskinleşmesi lazım.</small>
+    <div id="display-area">
+        <h1 id="odak-hedefi">8</h1>
+        <div class="info-box">
+            Recovery Modu (v6.6). Keskinliği ve büyütmeyi test etmek için aşağıdaki sliderları kullanın.
         </div>
     </div>
+
+    <svg style="position: absolute; width: 0; height: 0;">
+        <filter id="deconvFilter" color-interpolation-filters="sRGB">
+            <feConvolveMatrix 
+                id="convMatrix"
+                order="3" 
+                preserveAlpha="true" 
+                divisor="1"
+                kernelMatrix="0 0 0 0 1 0 0 0 0" />
+        </filter>
+    </svg>
 
     <div class="controls">
-        <div class="control-row">
-            <label>Büyütme (Scale): <span id="val-scale">1.0</span></label>
-            <input type="range" id="input-scale" min="0.5" max="5" step="0.1" value="1">
+        <div class="control-group">
+            <div class="label-row">
+                <span>TERS KESKİNLİK (De-conv)</span>
+                <span id="val-deconv">0</span>
+            </div>
+            <input type="range" id="input-deconv" min="0" max="300" value="0">
         </div>
 
-        <div class="control-row">
-            <label>Anti-Bleed (Keskinlik): <span id="val-sharp">0</span></label>
-            <input type="range" id="input-sharp" min="0" max="10" step="0.5" value="0">
+        <div class="control-group">
+            <div class="label-row">
+                <span>BÜYÜTME (Zoom)</span>
+                <span id="val-zoom">100</span>
+            </div>
+            <input type="range" id="input-zoom" min="50" max="300" value="100">
         </div>
-        
-        <div class="control-row">
-            <label>Harf Aralığı: <span id="val-spacing">0</span>px</label>
-            <input type="range" id="input-spacing" min="0" max="20" step="1" value="0">
+
+        <div class="control-group">
+            <div class="label-row">
+                <span>KENAR HATTI (px)</span>
+                <span id="val-stroke">0</span>
+            </div>
+            <input type="range" id="input-stroke" min="0" max="5" step="0.1" value="0">
         </div>
     </div>
 
     <script>
-        const target = document.getElementById('text-target');
-        
+        const matrix = document.getElementById('convMatrix');
+        const root = document.documentElement;
+
         function update() {
-            const sc = document.getElementById('input-scale').value;
-            const sh = document.getElementById('input-sharp').value;
-            const sp = document.getElementById('input-spacing').value;
+            const deconv = parseFloat(document.getElementById('input-deconv').value);
+            const zoom = parseFloat(document.getElementById('input-zoom').value);
+            const stroke = parseFloat(document.getElementById('input-stroke').value);
 
-            // 1. Büyütme/Küçültme (CSS Transform - En hızlı yöntem)
-            target.style.transform = `scale(${sc})`;
+            // 1. Matris Güncelleme (De-convolution etkisi)
+            // Merkez artarken kenarlar negatife düşerek "ışık emilimi" sağlar
+            const edge = (deconv > 0) ? -Math.sqrt(deconv) : 0;
+            const center = 1 + (Math.abs(edge) * 4); // Parlaklığı korumak için denge
+            
+            // kernelMatrix yapısı: 0 edge 0 / edge center edge / 0 edge 0
+            const k = `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`;
+            matrix.setAttribute('kernelMatrix', k);
 
-            // 2. Harf Aralığı (Bleeding engelleme)
-            target.style.letterSpacing = `${sp}px`;
+            // 2. CSS Değişkenlerini Güncelleme
+            root.style.setProperty('--zoom', zoom / 100);
+            root.style.setProperty('--stroke', stroke + 'px');
+            root.style.setProperty('--spacing', (zoom / 50) + 'px'); // Otomatik harf açma
 
-            // 3. Keskinleştirme (CSS Filter Contrast - Kayaçların basit hali)
-            // Kontrastı artırıp parlaklığı hafif kısarak harf kenarlarını topluyoruz
-            target.style.filter = `contrast(${100 + (sh * 20)}%) brightness(${100 - (sh * 2)}%)`;
-
-            // Değerleri yazdır
-            document.getElementById('val-scale').innerText = sc;
-            document.getElementById('val-sharp').innerText = sh;
-            document.getElementById('val-spacing').innerText = sp;
+            // 3. UI Rakamlarını Güncelleme
+            document.getElementById('val-deconv').innerText = deconv;
+            document.getElementById('val-zoom').innerText = zoom + "%";
+            document.getElementById('val-stroke').innerText = stroke;
         }
 
-        // Tüm inputlara dinleyici ekle
-        document.querySelectorAll('input').forEach(el => {
-            el.addEventListener('input', update);
+        // Event Listeners
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', update);
         });
 
-        // Sayfa yüklendiğinde çalıştır
+        // Başlangıç tetiklemesi
         update();
     </script>
 </body>
