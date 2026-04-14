@@ -3,97 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ByeFrame v7.5 - Contrast Core</title>
+    <title>ByeFrame v7.6 - Pure Focus</title>
     <style>
         body { 
             margin: 0; background: black; color: white; 
-            font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; 
+            font-family: 'Arial', sans-serif; overflow: hidden; 
             display: flex; flex-direction: column; height: 100vh;
         }
         
         #stage { 
             flex: 1; display: flex; align-items: center; justify-content: center; 
-            padding: 40px;
+            padding: 20px;
         }
         
-        /* GERÇEK OKUMA TESTİ: Yazı %35 daha da küçüldü */
+        /* MİKRO ODAK ALANI */
         #odak { 
-            font-size: 11px; /* Gerçekten zorlayıcı bir boyut */
-            font-weight: 600;
-            line-height: 1.7;
+            font-size: 11px; 
+            font-weight: 700; /* Daha kalın font, inceltme için alan sağlar */
+            line-height: 1.8;
             text-align: center;
-            filter: url(#motor);
-            max-width: 280px;
+            max-width: 260px;
             color: #ffffff;
+            /* Donanım hızlandırmalı keskinleştirme simülasyonu */
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: none; 
         }
 
-        .controls { background: #080808; padding: 20px; border-top: 2px solid #222; }
+        .controls { background: #0a0a0a; padding: 20px; border-top: 1px solid #333; }
         .row { margin-bottom: 15px; }
-        .label-wrap { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .label-wrap { display: flex; justify-content: space-between; margin-bottom: 5px; }
         label { color: #007bff; font-size: 10px; font-weight: bold; }
-        span { font-size: 10px; color: #aaa; font-mono: true; }
-        input { width: 100%; height: 30px; accent-color: #007bff; }
+        span { font-size: 10px; color: #777; }
+        input { width: 100%; height: 35px; accent-color: #007bff; }
     </style>
 </head>
 <body>
 
     <div id="stage">
         <div id="odak">
-            ByeFrame v7.5 Contrast Core Test:<br>
-            Şu an okuduğunuz metin standart bir gazete puntosundan bile küçüktür. 
-            0.7 bandındaki Anti-Halo etkisi eğer başarılıysa, göz merceğinizin dağıttığı ışık bu küçük harfleri yutmamalıdır.
-            İnce ve jilet gibi bir hat yakaladığınızda durun.
+            ByeFrame v7.6 Pure Focus:<br>
+            Anti-Halo 0.7 seviyesinde harfin "kemik" yapısını korur. 
+            Eğer keskinlik hala işlevsizse, kontrastı donanım seviyesinde zorluyoruz. 
+            Harf aralığı 2px, gözün karakterleri birbirinden ayırması için kritik eşiktir.
         </div>
     </div>
 
-    <svg style="position: absolute; width: 0; height: 0;">
-        <filter id="motor" color-interpolation-filters="sRGB">
-            <feConvolveMatrix id="mx" order="3" preserveAlpha="true" kernelMatrix="0 0 0 0 1 0 0 0 0" />
-            <feComponentTransfer>
-                <feFuncR type="linear" slope="1.5" intercept="-0.2"/>
-                <feFuncG type="linear" slope="1.5" intercept="-0.2"/>
-                <feFuncB type="linear" slope="1.5" intercept="-0.2"/>
-            </feComponentTransfer>
-        </filter>
-    </svg>
-
     <div class="controls">
         <div class="row">
-            <div class="label-wrap"><label>1. KESKİNLİK (DE-CONV)</label><span id="v2">0</span></div>
-            <input type="range" id="s2" min="0" max="500" value="0" oninput="run()">
+            <div class="label-wrap"><label>1. SİYAH DERİNLİK (KONTRAST)</label><span id="v2">100</span></div>
+            <input type="range" id="s2" min="100" max="300" value="100" oninput="run()">
         </div>
         
         <div class="row">
             <div class="label-wrap"><label>2. ANTI-HALO (İNCELTME)</label><span id="v1">0.7</span></div>
-            <input type="range" id="s1" min="0" max="2.0" step="0.05" value="0.7" oninput="run()">
+            <input type="range" id="s1" min="0" max="1.5" step="0.05" value="0.7" oninput="run()">
         </div>
 
         <div class="row">
-            <div class="label-wrap"><label>3. HARF ARALIĞI</label><span id="v3">4</span></div>
-            <input type="range" id="s3" min="0" max="20" value="4" oninput="run()">
+            <div class="label-wrap"><label>3. HARF ARALIĞI</label><span id="v3">2</span></div>
+            <input type="range" id="s3" min="0" max="10" value="2" oninput="run()">
         </div>
     </div>
 
     <script>
         function run() {
+            var contrast = document.getElementById('s2').value;
             var thin = document.getElementById('s1').value;
-            var sharp = document.getElementById('s2').value;
             var space = document.getElementById('s3').value;
             var el = document.getElementById('odak');
 
-            // Uygulama
-            el.style.webkitTextStroke = thin + "px black"; 
-            el.style.letterSpacing = space + "px";
+            // 1. Kontrast ve Parlaklık (Filter kullanarak)
+            el.style.filter = `contrast(${contrast}%) brightness(1.1)`;
 
-            // Kayaç Dinamiği
-            var edge = -(sharp / 25).toFixed(2);
-            var center = (1 - (edge * 4)).toFixed(2);
-            var matrix = `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`;
-            document.getElementById('mx').setAttribute('kernelMatrix', matrix);
+            // 2. Anti-Halo (Stroke)
+            el.style.webkitTextStroke = thin + "px black"; 
+
+            // 3. Aralığı Uygula
+            el.style.letterSpacing = space + "px";
 
             // Değerleri Yaz
             document.getElementById('v1').innerText = thin;
-            document.getElementById('v2').innerText = sharp;
+            document.getElementById('v2').innerText = contrast;
             document.getElementById('v3').innerText = space;
         }
         window.onload = run;
