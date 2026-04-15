@@ -1,39 +1,155 @@
-<div class="controls">
-    <div class="row">
-        <div class="l-wrap"><label>GÜNEŞ GÜCÜ (KESKİNLİK)</label><span id="v1">0</span></div>
-        <input type="range" id="s1" min="0" max="600" value="0" oninput="up()">
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ByeFrame v8.6 - Solar Power</title>
+    <style>
+        body { margin: 0; background: black; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* Rapor Paneli */
+        #report-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98); z-index: 1000; padding: 20px; box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .q-card { background: #111; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #007bff; }
+        .q-title { font-size: 14px; margin-bottom: 10px; color: #007bff; font-weight: bold; }
+        .rating-btns { display: flex; justify-content: space-between; }
+        .rating-btns button { background: #222; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 5px; flex: 1; margin: 2px; font-size: 14px; }
+        .rating-btns button.selected { background: #007bff; border-color: #fff; }
+        #data-output { display: none; background: #222; padding: 15px; border-radius: 10px; word-break: break-all; font-family: monospace; font-size: 12px; color: #2ecc71; margin-top: 15px; border: 1px dashed #2ecc71; }
+
+        /* Ana Arayüz */
+        #top-bar { display: flex; justify-content: space-between; padding: 10px; background: #111; border-bottom: 1px solid #333; align-items: center; }
+        #report-btn { background: #e74c3c; color: white; border: none; padding: 8px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        
+        #display-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
+        #viewport { filter: url(#byeEngine); text-align: center; }
+        .test-img { width: 100%; max-width: 220px; height: auto; border-radius: 8px; }
+        #odak { font-size: 12px; font-weight: 700; margin-top: 10px; color: #eee; }
+
+        /* Kontroller */
+        .controls { height: 45vh; background: #0a0a0a; padding: 15px; border-top: 2px solid #007bff; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-around; }
+        .row { width: 100%; }
+        .l-wrap { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; color: #007bff; font-weight: bold; text-transform: uppercase; }
+        input[type=range] { width: 100%; height: 35px; accent-color: #007bff; }
+    </style>
+</head>
+<body>
+
+    <div id="report-overlay">
+        <h2 style="color: #007bff; margin-top: 0;">Güneş Gücü Testi</h2>
+        <p id="current-params" style="font-size: 12px; color: #888; background: #1a1a1a; padding: 10px; border-radius: 5px;"></p>
+        
+        <div class="q-card">
+            <div class="q-title">NETLİK (1: Kötü - 5: Jilet)</div>
+            <div class="rating-btns" data-key="netlik">
+                <button onclick="setScore(this, 1)">1</button><button onclick="setScore(this, 2)">2</button><button onclick="setScore(this, 3)">3</button><button onclick="setScore(this, 4)">4</button><button onclick="setScore(this, 5)">5</button>
+            </div>
+        </div>
+
+        <div class="q-card">
+            <div class="q-title">OKUNABİLİRLİK</div>
+            <div class="rating-btns" data-key="okunabilirlik">
+                <button onclick="setScore(this, 1)">ZOR</button><button onclick="setScore(this, 2)">ORTA</button><button onclick="setScore(this, 3)">RAHAT</button>
+            </div>
+        </div>
+
+        <button onclick="generateData()" style="width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; font-weight: bold;">VERİYİ HAZIRLA</button>
+        <div id="data-output"></div>
+        <button id="copy-btn" onclick="copyToClipboard()" style="display: none; width: 100%; padding: 15px; background: #007bff; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px;">METNİ KOPYALA</button>
+        <button onclick="closeReport()" style="width: 100%; padding: 10px; background: transparent; color: #888; border: none; margin-top: 10px;">İPTAL</button>
     </div>
-    <div class="row">
-        <div class="l-wrap"><label>X-RAY KONTRAST</label><span id="v2">1.0</span></div>
-        <input type="range" id="s2" min="1" max="8" step="0.2" value="1.0" oninput="up()">
+
+    <div id="top-bar">
+        <span style="font-size: 10px;">BYEFRAME v8.6 <b style="color:#007bff;">SOLAR</b></span>
+        <button id="report-btn" onclick="openReport()">RAPORLA</button>
     </div>
-    <div class="row">
-        <div class="l-wrap"><label>ANTI-HALO</label><span id="v3">0.00</span></div>
-        <input type="range" id="s3" min="0" max="1.0" step="0.02" value="0" oninput="up()">
+
+    <div id="display-stage">
+        <div id="viewport">
+            <img src="https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?auto=format&fit=crop&w=400&q=80" class="test-img">
+            <div id="odak">Güneş Gücü: Işık Altında Keskinlik Testi</div>
+        </div>
     </div>
-</div>
 
-<script>
-    function up() {
-        var s = document.getElementById('s1').value;
-        var c = document.getElementById('s2').value;
-        var h = document.getElementById('s3').value;
+    <svg style="position: absolute; width: 0; height: 0;">
+        <filter id="byeEngine" color-interpolation-filters="sRGB">
+            <feConvolveMatrix id="mx" order="3" preserveAlpha="true" kernelMatrix="0 0 0 0 1 0 0 0 0" />
+            <feComponentTransfer id="ct">
+                <feFuncR type="linear" slope="1" intercept="0" />
+                <feFuncG type="linear" slope="1" intercept="0" />
+                <feFuncB type="linear" slope="1" intercept="0" />
+            </feComponentTransfer>
+        </filter>
+    </svg>
 
-        // Daha agresif keskinleştirme matrisi
-        var edge = -(s / 20).toFixed(3);
-        var center = (1 - (edge * 4)).toFixed(3);
-        document.getElementById('mx').setAttribute('kernelMatrix', `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`);
+    <div class="controls">
+        <div class="row">
+            <div class="l-wrap"><label>Güneş Gücü (Keskinlik)</label><span id="v1">0</span></div>
+            <input type="range" id="s1" min="0" max="600" value="0" oninput="up()">
+        </div>
+        <div class="row">
+            <div class="l-wrap"><label>X-Ray (Kontrast)</label><span id="v2">1.0</span></div>
+            <input type="range" id="s2" min="1" max="8" step="0.2" value="1.0" oninput="up()">
+        </div>
+        <div class="row">
+            <div class="l-wrap"><label>Anti-Halo</label><span id="v3">0.00</span></div>
+            <input type="range" id="s3" min="0" max="1.0" step="0.02" value="0" oninput="up()">
+        </div>
+    </div>
 
-        // Daha derin kontrast (Slope artarken intercept düşürülerek siyahlar korunur)
-        var funcs = document.querySelectorAll('#ct feFuncR, #ct feFuncG, #ct feFuncB');
-        funcs.forEach(f => {
-            f.setAttribute('slope', c);
-            f.setAttribute('intercept', -(c - 1) * 0.1); 
-        });
+    <script>
+        let reportData = { netlik: 0, okunabilirlik: 0 };
 
-        document.getElementById('text-test').style.webkitTextStroke = h + "px black";
-        document.getElementById('v1').innerText = s;
-        document.getElementById('v2').innerText = c;
-        document.getElementById('v3').innerText = h;
-    }
-</script>
+        function up() {
+            var s = document.getElementById('s1').value;
+            var c = document.getElementById('s2').value;
+            var h = document.getElementById('s3').value;
+
+            // Agresif Matris
+            var edge = -(s / 20).toFixed(3);
+            var center = (1 - (edge * 4)).toFixed(3);
+            document.getElementById('mx').setAttribute('kernelMatrix', `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`);
+
+            // Agresif Kontrast
+            var funcs = document.querySelectorAll('#ct feFuncR, #ct feFuncG, #ct feFuncB');
+            funcs.forEach(f => {
+                f.setAttribute('slope', c);
+                f.setAttribute('intercept', -(c - 1) * 0.1); 
+            });
+
+            document.getElementById('odak').style.webkitTextStroke = h + "px black";
+            document.getElementById('v1').innerText = s;
+            document.getElementById('v2').innerText = c;
+            document.getElementById('v3').innerText = h;
+        }
+
+        function openReport() {
+            document.getElementById('report-overlay').style.display = 'block';
+            document.getElementById('current-params').innerText = `K:${document.getElementById('s1').value} | C:${document.getElementById('s2').value} | H:${document.getElementById('s3').value}`;
+        }
+        function closeReport() { document.getElementById('report-overlay').style.display = 'none'; }
+        function setScore(btn, val) {
+            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            reportData[btn.parentElement.getAttribute('data-key')] = val;
+        }
+        function generateData() {
+            const payload = `LOG[${new Date().toLocaleTimeString()}]-K:${document.getElementById('s1').value}-C:${document.getElementById('s2').value}-H:${document.getElementById('s3').value}-N:${reportData.netlik}-O:${reportData.okunabilirlik}`;
+            document.getElementById('data-output').innerText = payload;
+            document.getElementById('data-output').style.display = 'block';
+            document.getElementById('copy-btn').style.display = 'block';
+        }
+        function copyToClipboard() {
+            const text = document.getElementById('data-output').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Kopyalandı!");
+                closeReport();
+            });
+        }
+        window.onload = up;
+    </script>
+</body>
+</html>
